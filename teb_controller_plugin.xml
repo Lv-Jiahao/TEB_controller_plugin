@@ -1,0 +1,8 @@
+<library path="teb_controller_plugin">
+  <class type="teb_controller::TebController" base_class_type="nav2_core::Controller">
+    <description>
+      TEB (Timed Elastic Band) controller plugin for Nav2 that optimizes trajectories 
+      considering obstacles, kinematics constraints and via-points.
+    </description>
+  </class>
+</library>
