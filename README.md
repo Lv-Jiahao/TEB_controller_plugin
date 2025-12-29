@@ -119,7 +119,7 @@ if (dist < inflation_radius) {
 }
 ```
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 组件 | 技术 | 用途 |
 |-----|------|------|
@@ -156,7 +156,7 @@ colcon build --packages-select teb_controller_plugin
 source install/setup.bash
 ```
 
-## 🚀 使用方法
+## 使用方法
 
 ### 1. 配置参数
 
