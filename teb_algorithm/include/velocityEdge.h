@@ -59,8 +59,8 @@ namespace teb_local_planner
 //         cfg_         = cfg;
 //     }
 // };
-
-class EdgeVelocityConstraint : public BaseTebMultiEdge<2, Eigen::VectorXd>  // ⭐ 改这里
+// 三元边
+class EdgeVelocityConstraint : public BaseTebMultiEdge<2, Eigen::VectorXd>  
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -88,9 +88,10 @@ public:
         Eigen::Vector3d point2 = v2->estimate();
 
         double dist = sqrt(pow(point1[0] - point2[0],2) + pow(point1[1] - point2[1],2));
-        double deltaAngle = fabs(point1[2] - point2[2]);
         double vel = dist / v3->estimate();
-        double w = tools::normalize_theta(deltaAngle) / v3->estimate();
+        // 这里point[2]：是angle
+        double deltaAngle = fabs(point1[2] - point2[2]);
+        double w = tools::normalize_theta(deltaAngle) / (v3->estimate()+ 1e-6);
 
         _error[0] = tools::penaltyBoundToInterval(vel, -cfg_->max_vel_x_backwards, cfg_->max_vel, cfg_->penalty_epsilon);
         _error[1] = tools::penaltyBoundToInterval(w, cfg_->max_vel_theta, cfg_->penalty_epsilon);

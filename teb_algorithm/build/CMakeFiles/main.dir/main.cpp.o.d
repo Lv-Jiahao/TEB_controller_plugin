@@ -723,6 +723,7 @@ CMakeFiles/main.dir/main.cpp.o: \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/edge_via_point.h \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/velocityEdge.h \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/kinetic_edge.h \
+ /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/jerk_edge.h \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/matplotlib-cpp/matplotlibcpp.h \
  /usr/include/python3.10/Python.h /usr/include/python3.10/patchlevel.h \
  /usr/include/python3.10/pyconfig.h \

@@ -10,7 +10,7 @@
 #include "vertexPoint.h"
 #include "tools.h"
 
-// 距离约束边（继承TEB二元边基类）
+// 距离约束边（继承TEB一元边基类）
 namespace teb_local_planner
 {
 //public BaseTebUnaryEdge<1, teb_local_planner::obstacleInfo, VertexPoint2D>
@@ -22,7 +22,7 @@ class EdgeObstacleConstraint : public BaseTebUnaryEdge<1, tools::obstacleInfo, V
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    // 核心：误差计算
+    // 核心：误差计算  g2o 内部定义了一个基类 EdgeObstacleConstraint：BaseTebUnaryEdge：g2o::BaseUnaryEdge 基类定义了computeError()
     virtual void computeError() override
     {
         if (!cfg_)
@@ -32,10 +32,10 @@ public:
             return;
         }
 
-        // 获取顶点
+        // 获取顶点 定义几个 传几个进来
         const VertexPoint2D* v1 = static_cast<const VertexPoint2D*>(_vertices[0]);
         Eigen::Vector3d point = v1->estimate();
-        
+        // point 存储的是机器人路径点的位置 距离太近了，函数会返回一个正值，距离越近，值越大
         double dist = sqrt(pow(_measurement.x - point[0],2) + pow(_measurement.y - point[1],2));
         _error[0] = tools::penaltyBoundFromBelow(dist, cfg_->min_obstacle_dist, cfg_->penalty_epsilon);
 
@@ -44,7 +44,7 @@ public:
 
     void setObstcele(tools::obstacleInfo &obs,const TebConfig* cfg)
     {
-        _measurement = obs;
+        _measurement = obs;   //存储的是障碍物的坐标 (x, y)
         cfg_         = cfg;
     }
 };

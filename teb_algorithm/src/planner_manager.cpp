@@ -7,38 +7,38 @@
 避免悬空指针：clearGraph() 后，旧顶点被销毁，但我们有数值备份可以重建
 */
 #include "planner_manager.h"
-
+ 
 
 namespace teb_local_planner
 {
 
+    void plannerManager::runOptimization()
+    {
+        std::cout << "===== TEB Style Optimization Start =====" << std::endl;
+        std::cout << "\n----- 开始优化 -----" << std::endl;
 
-void plannerManager::runOptimization()
-{
-    std::cout << "===== TEB Style Optimization Start =====" << std::endl;
-    std::cout << "\n----- 开始优化 -----" << std::endl;
+        // 1. 清理所有旧顶点，防止内存泄漏/野指针
+        for (auto v : pose_vertices_) delete v;
+        pose_vertices_.clear();
+        for (auto v : timediff_vertices_) delete v;
+        timediff_vertices_.clear();
 
-    // ⭐⭐⭐ 1. 清理所有旧顶点，防止内存泄漏/野指针
-    for (auto v : pose_vertices_) delete v;
-    pose_vertices_.clear();
-    for (auto v : timediff_vertices_) delete v;
-    timediff_vertices_.clear();
+        // 2. 重建全新graph，彻底清空上一轮内容
+        optimizer_ = initOptimizer();
+        vertexId_ = 0;
 
-    // ⭐⭐⭐ 2. 重建全新graph，彻底清空上一轮内容
-    optimizer_ = initOptimizer();
-    vertexId_ = 0;
+        // 3. 重建顶点、边
+        AddVertices();          // 添加顶点
+        AddObstacleEdges();     // 添加障碍物约束边
+        AddViaPointEdges();     // 添加路径跟随约束边
+        AddVelocityEdgs();      // 添加速度约束边
+        AddEdgeKinematics();    // 添加运动学约束边
+        AddJerkEdges();         // 添加Jerk约束边
+        if (!optimizeGraph())
+            std::cerr << "优化失败！" << std::endl;
 
-    // ⭐⭐⭐ 3. 重建顶点、边
-    AddVertices();
-    AddObstacleEdges();
-    AddViaPointEdges();
-    AddVelocityEdgs();
-    AddEdgeKinematics();
-    if (!optimizeGraph())
-        std::cerr << "优化失败！" << std::endl;
-
-    std::cout << "\n===== TEB Style Optimization End =====" << std::endl;
-}
+        std::cout << "\n===== TEB Style Optimization End =====" << std::endl;
+    }
 
     boost::shared_ptr<g2o::SparseOptimizer> plannerManager::initOptimizer()
     {
@@ -73,6 +73,7 @@ void plannerManager::runOptimization()
         factory->registerType("EDGE_obstacle_CONSTRAINT", new g2o::HyperGraphElementCreator<EdgeObstacleConstraint>);
         factory->registerType("EDGE_via_point_CONSTRAINT", new g2o::HyperGraphElementCreator<EdgeViaPointConstraint>);
         factory->registerType("EDGE_velocity_CONSTRAINT", new g2o::HyperGraphElementCreator<EdgeVelocityConstraint>);
+        factory->registerType("EDGE_jerk_CONSTRAINT", new g2o::HyperGraphElementCreator<EdgeJerkConstraint>);  // 新增
 
     }
 
@@ -122,11 +123,12 @@ void plannerManager::runOptimization()
             double dist = fabs(tools::distanceBetweenTwoPoint(path[i], path[i-1]));
             double dt = dist / cfg_.max_vel;
             double dt2 = 0;
-            
+        
             if(i < path.size() - 1)
             {
                 dt2 = fabs(tools::normalize_theta(path[i].theta - path[i-1].theta)) / cfg_.max_vel_theta;
             }
+            // 机器人在移动/转弯 时两者所需的最大时间
             dt = std::max(dt, dt2);
             
             // 存储 dt 值，而不是顶点指针
@@ -177,10 +179,11 @@ void plannerManager::runOptimization()
         // 添加位姿顶点
         for(size_t i = 0; i < pathPointArr_.size(); i++)
         {
-            VertexPoint2D* v = new VertexPoint2D();
+            // 这里应该使用 VertexSE2()
+            VertexPoint2D* v = new VertexPoint2D();  //这里使用的是 g2o的 数据类型(x,y)
             v->setId(vertexId_++);
             
-            // ⭐ 第一个和最后一个点固定
+            // 第一个和最后一个点固定
             if (i == 0 || i == pathPointArr_.size() - 1)
             {
                 v->setFixed(true);
@@ -189,7 +192,7 @@ void plannerManager::runOptimization()
             {
                 v->setFixed(false);
             }
-            
+            // 这里传入的是3d，最后的 theta 应该是舍弃了
             v->setEstimate(Eigen::Vector3d(pathPointArr_[i].x, pathPointArr_[i].y, pathPointArr_[i].theta));
             pose_vertices_.push_back(v);
             
@@ -245,14 +248,9 @@ void plannerManager::runOptimization()
 
     void plannerManager::AddVelocityEdgs()
     {
-        std::cout << "=== AddVelocityEdgs 开始 ===" << std::endl;
-        std::cout << "optimizer_ 有效: " << (optimizer_ ? "是" : "否") << std::endl;
-        std::cout << "optimizer_->vertices().size() = " << optimizer_->vertices().size() << std::endl;
-        std::cout << "pose_vertices_.size() = " << pose_vertices_.size() << std::endl;
-        std::cout << "timediff_vertices_.size() = " << timediff_vertices_.size() << std::endl;
-        
+                
         Eigen::Matrix<double,2,2> information;
-        information(0,0) = cfg_.weight_max_vel_x;
+        information(0,0) = cfg_.weight_max_vel_x;  // 限制正向移动的能力，针对机器人前进方向的具体约束。
         information(1,1) = cfg_.weight_max_vel_theta;
         information(0,1) = 0.0;
         information(1,0) = 0.0;
@@ -269,7 +267,7 @@ void plannerManager::runOptimization()
                 break;
             }
             
-            // ⭐ 检查顶点是否在优化器中
+            // 检查顶点是否在优化器中
             if (!optimizer_->vertex(pose_vertices_[i]->id()) ||
                 !optimizer_->vertex(pose_vertices_[i+1]->id()) ||
                 !optimizer_->vertex(timediff_vertices_[i]->id()))
@@ -285,8 +283,8 @@ void plannerManager::runOptimization()
             edge_velocity->setInformation(information);
             edge_velocity->setcfg(&cfg_);
             
-            // ⭐ 检查边的有效性
-            if (!edge_velocity->allVerticesFixed())
+            // 检查边的有效性
+            if (!edge_velocity->allVerticesFixed())  // 如果 $P_i$、$P_{i+1}$ 和 $\Delta T_i$ 全部被设为 Fixed（固定不动）
             {
                 if (!optimizer_->addEdge(edge_velocity))
                 {
@@ -307,24 +305,54 @@ void plannerManager::runOptimization()
     }
 
     // 添加边
-   void plannerManager::AddObstacleEdges()
+    void plannerManager::AddObstacleEdges()
     {
-        Eigen::Matrix<double,1,1> information;
-        information.fill(cfg_.obstacle_weight);
+        std::cout << "\n=== AddObstacleEdges 开始 ===" << std::endl;
+        std::cout << "位姿顶点数量: " << pose_vertices_.size() << std::endl;
+        std::cout << "障碍物数量: " << obstaclePointInfo_.size() << std::endl;
+        std::cout << "障碍物权重: " << cfg_.obstacle_weight << std::endl;
+        std::cout << "最小距离: " << cfg_.min_obstacle_dist << std::endl;
         
+        if (obstaclePointInfo_.empty())
+        {
+            std::cout << "⚠️  警告: 没有障碍物信息,跳过障碍物约束!" << std::endl;
+            return;
+        }
+        
+        // 正确设置information矩阵
+        Eigen::Matrix<double,1,1> information;
+        information.fill(cfg_.obstacle_weight);  // 使用配置的权重
+        
+        int edge_count = 0;
         for (size_t i = 0; i < pose_vertices_.size(); ++i)
         {
             for(size_t j = 0; j < obstaclePointInfo_.size(); j++)
             {
+                // 这里被 g2o 封装了，会产生 pose_vertices_.size()*obstaclePointInfo_.size() 条边，每条边都产生一个cost值，
+                // 在config里会有 min_obstacle_dist 值，
                 EdgeObstacleConstraint* e_soft = new EdgeObstacleConstraint();
-                // e_soft->setId(edgeId_++);  // ← 使用全局 edgeId_
+                // 告诉这个边：“你应该去监视第 i 个顶点的坐标变化”
                 e_soft->setVertex(0, pose_vertices_[i]);
                 e_soft->setTebConfig(cfg_);
                 e_soft->setObstcele(obstaclePointInfo_[j], &cfg_);
-                e_soft->setInformation(Eigen::Matrix<double,1,1>::Identity());
-                optimizer_->addEdge(e_soft);
+                e_soft->setInformation(information);  // 权重矩阵
+                
+                // 把边正式注册到 g2o 的优化池子里
+                if (!optimizer_->addEdge(e_soft))
+                {
+                    std::cerr << "[错误] 添加障碍物约束边失败 pose=" << i 
+                            << " obs=" << j << std::endl;
+                    delete e_soft;
+                }
+                else
+                {
+                    edge_count++;
+                }
             }
         }
+        
+        std::cout << "[成功] 添加了 " << edge_count << " 条障碍物约束边" << std::endl;
+        std::cout << "预期数量: " << (pose_vertices_.size() * obstaclePointInfo_.size()) << std::endl;
     }
 
     int plannerManager::findClosestTrajectoryPose(tools::pathInfo &ref_point,int& idx)
@@ -357,6 +385,7 @@ void plannerManager::runOptimization()
     void plannerManager::AddViaPointEdges()
     {
         int start_index = 0;
+        // 相当于，参考轨迹有 n个点，待优化也有n个，要计算之间的 距离error，n条边
         for(size_t i = 0; i < pathPointArr_.size(); i++)
         {
             int index = findClosestTrajectoryPose(pathPointArr_[i], start_index);
@@ -365,7 +394,7 @@ void plannerManager::runOptimization()
             information.fill(cfg_.weight_viapoint);
             
             EdgeViaPointConstraint* edge_viapoint = new EdgeViaPointConstraint;
-            // edge_viapoint->setId(edgeId_++);  // ← 使用全局 edgeId_
+            
             edge_viapoint->setVertex(0, pose_vertices_[index]);
             edge_viapoint->setInformation(information);
             edge_viapoint->setPathPoint(pathPointArr_[i], &cfg_);
@@ -419,6 +448,61 @@ void plannerManager::runOptimization()
         // std::cout << "实际距离：" << std::fixed << std::setprecision(4) << final_dist << std::endl;
         // std::cout << "期望距离：" << std::fixed << std::setprecision(4) << cfg_.distance_constraint_exp_dist << std::endl;
 
+    }
+
+    void plannerManager::AddJerkEdges()
+    {
+        std::cout << "=== AddJerkEdges 开始 ===" << std::endl;
+        
+        Eigen::Matrix<double,2,2> information;
+        information.setZero();
+        information(0,0) = cfg_.weight_jerk;        // 线性jerk权重
+        information(1,1) = cfg_.weight_jerk;        // 角度jerk权重
+        
+        int edge_count = 0;
+        
+        // 遍历所有可以构成jerk约束的顶点组合
+        // 需要5个连续位姿 + 4个连续时间差
+        for (size_t i = 0; i + 4 < pose_vertices_.size(); ++i)
+        {
+            // 检查时间差顶点索引是否有效
+            if (i + 3 >= timediff_vertices_.size())
+            {
+                std::cerr << "[警告] timediff索引越界: i=" << i << std::endl;
+                break;
+            }
+            
+            // 创建jerk约束边
+            EdgeJerkConstraint* edge_jerk = new EdgeJerkConstraint();
+            
+            // 连接5个位姿顶点 内存中建立指针级联 edge_jerk 与下述9个顶点相关联
+            edge_jerk->setVertex(0, pose_vertices_[i]);
+            edge_jerk->setVertex(1, pose_vertices_[i+1]);
+            edge_jerk->setVertex(2, pose_vertices_[i+2]);
+            edge_jerk->setVertex(3, pose_vertices_[i+3]);
+            edge_jerk->setVertex(4, pose_vertices_[i+4]);
+            
+            // 连接4个时间差顶点
+            edge_jerk->setVertex(5, timediff_vertices_[i]);
+            edge_jerk->setVertex(6, timediff_vertices_[i+1]);
+            edge_jerk->setVertex(7, timediff_vertices_[i+2]);
+            edge_jerk->setVertex(8, timediff_vertices_[i+3]);
+            
+            edge_jerk->setInformation(information);
+            edge_jerk->setjerkcfg(&cfg_);
+            
+            if (!optimizer_->addEdge(edge_jerk))
+            {
+                std::cerr << "[错误] 添加jerk约束边失败 i=" << i << std::endl;
+                delete edge_jerk;
+            }
+            else
+            {
+                edge_count++;
+            }
+        }
+        
+        std::cout << "[成功] 添加了 " << edge_count << " 条jerk约束边" << std::endl;
     }
 
 }

@@ -14,6 +14,7 @@
 #include "velocityEdge.h"
 #include "kinetic_edge.h"
 #include <Eigen/StdVector>  // ⭐ 添加这个头文件hgj
+#include "jerk_edge.h" 
 
 // -----------------------------------------------------------------------------
 // 优化器管理类
@@ -34,7 +35,7 @@ public:
         timediff_vertices_.clear();
         timediff_vec_.clear();
         vertexId_ = 0;
-        //edgeId_ = 0;  // ← 初始化边 ID
+        
     }
 
     // 析构函数：释放顶点内存
@@ -79,6 +80,8 @@ private:
     // 执行优化
     bool optimizeGraph();
 
+    void AddJerkEdges();  // jerk约束
+
     // 清空图（保留顶点，仅删除边）
     void clearGraph()
     {
@@ -105,15 +108,15 @@ private:
     boost::shared_ptr<g2o::SparseOptimizer> optimizer_;
     // std::vector<VertexPoint2D*> pose_vertices_;          // 位姿顶点
     // std::vector<vertexTimeDiff*> timediff_vertices_;     // 时间差顶点（每次迭代重建）
-    // ⭐ 使用 Eigen 对齐分配器
-    std::vector<VertexPoint2D*, Eigen::aligned_allocator<VertexPoint2D*>> pose_vertices_;
+    //  使用 Eigen 对齐分配器
+    std::vector<VertexPoint2D*, Eigen::aligned_allocator<VertexPoint2D*>> pose_vertices_;  //存储每次优化后的 轨迹顶点
     std::vector<vertexTimeDiff*, Eigen::aligned_allocator<vertexTimeDiff*>> timediff_vertices_;
     
     std::vector<double> timediff_vec_;                   // 存储 dt 值
     std::vector<tools::pathInfo> pathPointArr_;
     std::vector<tools::obstacleInfo> obstaclePointInfo_;
     int vertexId_;
-    // int edgeId_;  // ← 新增：全局边 ID 计数器
+
 
 };
 }  // namespace teb_local_planner

@@ -46,6 +46,11 @@ struct TebConfig
 
     // 局部优化距离
     double local_distance = 3.0;
+
+    // todo Jerk约束参数
+    double max_jerk           = 1.0;     // 最大线性jerk (m/s³)
+    double max_jerk_theta     = 1.0;     // 最大角度jerk (rad/s³)
+    double weight_jerk        = 10.0;    // jerk约束权重
 };
 
 // -----------------------------------------------------------------------------

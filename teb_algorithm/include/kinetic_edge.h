@@ -60,7 +60,7 @@ namespace teb_local_planner
 //         cfg_         = cfg;
 //     }
 // };
-class EdgeKineticConstraint : public BaseTebMultiEdge<2, Eigen::VectorXd>  // ⭐ 改这里
+class EdgeKineticConstraint : public BaseTebMultiEdge<2, Eigen::VectorXd>  //  改这里
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -91,9 +91,12 @@ public:
         
         Eigen::Vector2d deltaS = p2 - p1;
         
+        // 非侧滑约束（Non-skidding Constraint），位移矢量必须与车体朝向平行，不允许有垂直于车身方向的分量。
         _error[0] = fabs((cos(point1[2]) + cos(point2[2])) * deltaS[1] - 
                          (sin(point1[2]) + sin(point2[2])) * deltaS[0]);
 
+        //(..., 0, 0) 表示：当下限为 0 时，任何小于 0 的值都会产生误差。) dot用于通过角度判断 前进/后退
+        // penaltyBoundFromBelow定义了一个cost 线性函数，基于惩罚，严禁倒车
         Eigen::Vector2d angle_vec(cos(point1[2]), sin(point1[2]));	   
         _error[1] = tools::penaltyBoundFromBelow(deltaS.dot(angle_vec), 0, 0);
     }

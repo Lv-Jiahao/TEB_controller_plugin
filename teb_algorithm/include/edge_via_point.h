@@ -10,7 +10,7 @@
 #include  "vertexPoint.h"
 #include "tools.h"
 
-///距离约束边（继承TEB二元边基类）
+///距离约束边（继承TEB一元边基类）
 namespace teb_local_planner
 {
 //public BaseTebUnaryEdge<1, teb_local_planner::obstacleInfo, VertexPoint2D>
@@ -34,13 +34,14 @@ public:
         // 获取顶点
         const VertexPoint2D* v1 = static_cast<const VertexPoint2D*>(_vertices[0]);
         Eigen::Vector3d point = v1->estimate();
+        // point 优化中的顶点
         _error[0] = sqrt(pow(_measurement.x - point[0],2) + pow(_measurement.y - point[1],2));
         // std::cout <<  "point" << point <<  "误差值: " << _error[0] << std::endl;  // 距离小于阈值时应>0
     }
 
     void setPathPoint(tools::pathInfo &path,const TebConfig* cfg)
     {
-        _measurement = path;
+        _measurement = path;  // 参考轨迹点（目标）
         cfg_         = cfg;
     }
 };

@@ -812,6 +812,7 @@ CMakeFiles/main.dir/main.cpp.o: ../main.cpp \
   ../include/edge_via_point.h \
   ../include/velocityEdge.h \
   ../include/kinetic_edge.h \
+  ../include/jerk_edge.h \
   ../matplotlib-cpp/matplotlibcpp.h \
   /usr/include/python3.10/Python.h \
   /usr/include/python3.10/patchlevel.h \
@@ -1772,7 +1773,8 @@ CMakeFiles/main.dir/src/planner_manager.cpp.o: ../src/planner_manager.cpp \
   ../include/tools.h \
   ../include/edge_via_point.h \
   ../include/velocityEdge.h \
-  ../include/kinetic_edge.h
+  ../include/kinetic_edge.h \
+  ../include/jerk_edge.h
 
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h:
@@ -1912,6 +1914,8 @@ CMakeFiles/main.dir/src/planner_manager.cpp.o: ../src/planner_manager.cpp \
 /usr/include/x86_64-linux-gnu/python3.10/pyconfig.h:
 
 /usr/include/python3.10/Python.h:
+
+../include/jerk_edge.h:
 
 ../include/tools.h:
 

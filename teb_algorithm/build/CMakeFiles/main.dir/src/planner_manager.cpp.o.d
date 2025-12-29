@@ -722,4 +722,5 @@ CMakeFiles/main.dir/src/planner_manager.cpp.o: \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/tools.h \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/edge_via_point.h \
  /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/velocityEdge.h \
- /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/kinetic_edge.h
+ /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/kinetic_edge.h \
+ /home/haney/ROS_Project/Teb_Trajectory_Optimize/src/teb_controller_plugin/teb_algorithm/include/jerk_edge.h

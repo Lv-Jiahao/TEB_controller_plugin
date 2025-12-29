@@ -23,11 +23,11 @@ int main()
     std::vector<double> color;
     // 1. 配置初始化
     teb_local_planner::TebConfig cfg;
-    cfg.no_inner_iterations = 5;
+    cfg.no_inner_iterations = 10; // 5;
     cfg.no_outer_iterations = 4;
-    cfg.min_obstacle_dist = 2.0;
+    cfg.min_obstacle_dist = 0.8; //2.0;
     cfg.penalty_epsilon = 0.05;
-    cfg.obstacle_weight = 10;                    
+    cfg.obstacle_weight = 200;                    
     cfg.optimization_verbose = true;
     cfg.weight_viapoint  = 1;
     cfg.max_vel           = 1.0;
@@ -35,8 +35,13 @@ int main()
     cfg.max_vel_x_backwards = 0.3;
     cfg.weight_max_vel_x    = 10;
     cfg.weight_max_vel_theta = 10;
-    cfg.weight_kinematics_nh  = 1000;
+    cfg.weight_kinematics_nh  = 10;  // 1000;
     cfg.weight_kinematics_forward_drive = 1;
+
+    // 添加jerk权重
+    cfg.weight_jerk = 5.0;                     
+    cfg.max_jerk = 2.0;
+    cfg.max_jerk_theta = 2.0;
 
 
     // 2. 创建规划器并运行优化
@@ -52,6 +57,7 @@ int main()
         temp.x = i;
         temp.y = i;
         temp.theta = 3.1415926/4;
+         
         //gloablPlan 全局路径信息
         gloablPlan.push_back(temp);
         std::cout << "(" << temp.x  << ", " << temp.y << ")" << std::endl;
@@ -63,7 +69,7 @@ int main()
 
     // add obstacles 1
     tools::obstacleInfo obstemp;
-    obstemp.x = 3;
+    obstemp.x = 3.0;
     obstemp.y = 3.5;
     obs_x.push_back(obstemp.x);
     obs_y.push_back(obstemp.y);
@@ -71,8 +77,8 @@ int main()
     obstacles.push_back(obstemp);
 
     // add obstacles 2
-    obstemp.x = 7;
-    obstemp.y = 7.6;
+    obstemp.x = 7.0;
+    obstemp.y = 7.5;
     obs_x.push_back(obstemp.x);
     obs_y.push_back(obstemp.y);
     color.push_back(1.0);
