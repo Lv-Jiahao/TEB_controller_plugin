@@ -73,12 +73,12 @@ public:
         double v_k2  = dist_k2 / (t_k2 + 1e-6);
         double v_k3  = dist_k3 / (t_k3 + 1e-6);
 
-        // 计算加速度 a_k, a_{k+1} (论文公式11)
+        // 计算加速度 a_k, a_{k+1} 
         // a_k = (v_{k+1} - v_k) / ((ΔT_k + ΔT_{k+1}) / 2)
         double a_k   = (v_k1 - v_k) / ((t_k + t_k1) / 2.0 + 1e-6);
         double a_k1  = (v_k2 - v_k1) / ((t_k1 + t_k2) / 2.0 + 1e-6);
 
-        // 计算平滑时间分母 (论文公式15)
+        // 计算平滑时间分母 
         double smooth_dt = 0.25 * t_k + 0.75 * t_k1 + 0.75 * t_k2 + 0.25 * t_k3;
 
         // 计算线性jerk

@@ -15,6 +15,7 @@
 #include "kinetic_edge.h"
 #include <Eigen/StdVector>  // ⭐ 添加这个头文件hgj
 #include "jerk_edge.h" 
+#include "edge_goal_pose.h"
 
 // -----------------------------------------------------------------------------
 // 优化器管理类
@@ -65,6 +66,8 @@ private:
     // 添加顶点（TEB风格：容器管理顶点）
     void AddVertices();
 
+    // 目标点约束
+    void AddGoalPoseEdge(); 
 
     // 添加边（TEB风格：new边+setTebConfig+关联顶点）
     void AddObstacleEdges();
